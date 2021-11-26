@@ -6,10 +6,11 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 
 # 超参数设置
 debug = False       # 改成True进入调试模式
-batch_size = 16
+batch_size = 64
 lr = 0.01
-epochs = 15
+epochs = 10
 train_ratio = 0.8
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 if debug:
     epochs = 1000
@@ -80,6 +81,8 @@ def train(dataloader, model, loss_fn, optimizer):
         size = batch_size * 1
 
     for batch, (X, y) in enumerate(dataloader):
+        X = X.to(device)
+        y = y.to(device)
         pred = model(X)
         loss = loss_fn(pred, y)
 
@@ -107,6 +110,8 @@ def test(dataloader, model, loss_fn):
 
     with torch.no_grad():
         for X, y in dataloader:
+            X = X.to(device)
+            y = y.to(device)
             pred = model(X)
             loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).float().sum().item()
@@ -123,9 +128,11 @@ def main():
     print("读取数据完成!")
 
     print("开始编译模型...")
-    model = MyNet()
+    model = MyNet().to(device)
     print("模型编译完成！")
-    print(model)
+
+    # 预加载训练权重
+    model.load_state_dict(torch.load("model_params.pkl"))
 
     train_iter = DataLoader(train_data, batch_size=batch_size,
                             shuffle=True, num_workers=8)
@@ -137,14 +144,19 @@ def main():
         train_iter = (next(iter(train_iter)))
         test_iter = (next(iter(test_iter)))
 
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+
+    print("训练开始...")
+    print(f"在{device}上训练...")
+
     for epoch in range(epochs):
-        print("训练开始...")
         print("Epoch {}/{}:\n----------".format(epoch+1, epochs))
         train(train_iter, model, loss_fn, optimizer)
         test(test_iter, model, loss_fn)
-        print("训练完成！")
+
+    print("训练完成！")
+    torch.save(model.state_dict(), "model_params.pkl")
 
 
 if __name__ == "__main__":
