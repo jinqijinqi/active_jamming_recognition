@@ -132,7 +132,7 @@ def main():
     print("模型编译完成！")
 
     # 预加载训练权重
-    model.load_state_dict(torch.load("model_params.pkl"))
+    # model.load_state_dict(torch.load("model_params.pkl"))
 
     train_iter = DataLoader(train_data, batch_size=batch_size,
                             shuffle=True, num_workers=8)
@@ -145,7 +145,7 @@ def main():
         test_iter = (next(iter(test_iter)))
 
     loss_fn = nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adagrad(model.parameters(), lr=lr)
 
     print("训练开始...")
     print(f"在{device}上训练...")
