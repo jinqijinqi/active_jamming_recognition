@@ -1,5 +1,7 @@
-%2020.11.16
+%2021年12月7日
 %产生间歇采样转发干扰作为分类数据，干噪比30-60dB之间随机；
+
+%% 间歇采样直接转发干扰
 close all;clear;clc
 j=sqrt(-1);
 data_num=1;   %干扰样本数
@@ -17,13 +19,13 @@ echo_stft=zeros(data_num,100,247,3);  %矩阵大小（500,200,1000,2）
 num_label = 2;
 label=zeros(1,data_num)+num_label;                         %标签数据,此干扰标签为0
 
-repetion_times=[4,3,2,1];   %重复次数
-period=[5e-6,10e-6];    %采样脉冲周期 taup / period = 4 或 2，表示采样次数
-duty=[20,25,33.33,50];  %占空比
+repetion_times=1;   %重复次数
+period=[5e-6];    %采样脉冲周期   其中taup / period = 4，表示采样次数
+duty=[50];  %占空比
 
 for m=1:data_num
     %% 目标回波＋噪声
-    JNR=30+round(rand(1,1)*30); %干噪比30-60dB
+    JNR=10+round(rand(1,1)*10); %干噪比10-20dB
     sp=randn([1,samp_num])+1j*randn([1,samp_num]);%噪声基底
     sp=sp/std(sp);
     As=10^(SNR/20);%目标回波幅度
@@ -32,11 +34,10 @@ for m=1:data_num
     sp(1+range_tar:length(lfm)+range_tar)=sp(1+range_tar:length(lfm)+range_tar)+As*lfm;  %噪声+目标回波 目标在距离窗内200点处
     
     %% 采样
-    index1=1+round(rand(1,1));
-    index2=1+round(rand(1,1)*3);
-    period1=period(index1);
-    duty1=duty(index2);
-    repetion_times1=repetion_times(index2);
+%     index1=1+round(rand(1,1));
+    period1=period(1);
+    duty1=duty(1);
+    repetion_times1=repetion_times(1);
     squa=(square((1/period1)*2*pi*t, duty1)+1)/2;   %生成单极性方波，来做采样
     squa(400)=0;
     squa1=lfm.*squa;    %采样后的目标回波
@@ -55,26 +56,26 @@ for m=1:data_num
     sp_abs=abs(sp);
 
     %% 作ISRJ时域波形
-    figure(1)
-    plot(linspace(0,100,2000),sp);
-    set(gca,'FontName','Times New Roman');
-    title("ISRJ_direct")
-    xlabel('Time/μs','FontSize',15);ylabel('Normalized amplitude','FontSize',15)
+%     figure(1)
+%     plot(linspace(0,100,2000),sp);
+%     set(gca,'FontName','Times New Roman');
+%     title("ISRJ_direct")
+%     xlabel('Time/μs','FontSize',15);ylabel('Normalized amplitude','FontSize',15)
 
-    %信号实部、虚部分开存入三维张量中
+    % 信号实部、虚部分开存入三维张量中
     echo(m,1:2000,1)=real(sp); 
     echo(m,1:2000,2)=imag(sp);
     echo(m,1:2000,3)=sp_abs; 
 %     echo(m,1:2000,4)=angle(sp); 
 
     %% STFT变换
-    [S,~,~,~]=spectrogram(sp,32,32-8,100,fs);
+    [S,~,~,~]=spectrogram(sp,32,32-8,512,fs);
     
     S=S/max(max(S));
     S_abs=abs(S);
 
     %% 作时频图
-    figure(2)
+    figure(1)
     imagesc(linspace(0,100,size(S,1)),linspace(-10,10,size(S,2)),abs(S));
     set(gca,'FontName','Times New Roman');
     title("ISRJ_direct | STFT")
